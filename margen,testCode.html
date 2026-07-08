@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cloudflare Media Player</title>
+  <style>
+    :root {
+      --bg: #07111f;
+      --panel: rgba(10, 18, 34, 0.95);
+      --text: #f5f7ff;
+      --muted: #94a3c2;
+      --accent: #3b82f6;
+      --accent2: #8b5cf6;
+      --border: rgba(255,255,255,0.12);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #0b1428 0%, #050913 100%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .hero {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 24px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .logo {
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .logo span { color: #5eead4; }
+
+    .badge {
+      background: rgba(94,234,212,0.15);
+      color: #5eead4;
+      border: 1px solid rgba(94,234,212,0.25);
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: clamp(1.7rem, 3vw, 2.4rem);
+    }
+
+    .intro {
+      color: var(--muted);
+      line-height: 1.7;
+      margin-bottom: 18px;
+      max-width: 760px;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    input[type="text"], input[type="file"] {
+      width: 100%;
+      background: rgba(255,255,255,0.06);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: 1rem;
+    }
+
+    input::file-selector-button {
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 12px;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+
+    button {
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin-top: 6px;
+    }
+
+    .player-box {
+      margin-top: 20px;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: #02050b;
+      min-height: 320px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .player-box video, .player-box iframe {
+      width: 100%;
+      height: 100%;
+      min-height: 320px;
+      background: #000;
+    }
+
+    .empty-state {
+      text-align: center;
+      color: var(--muted);
+      padding: 24px;
+    }
+
+    .library {
+      margin-top: 20px;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 16px;
+      background: rgba(255,255,255,0.04);
+    }
+
+    .library h3 {
+      margin: 0 0 12px;
+      font-size: 1.05rem;
+    }
+
+    .library-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .library-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: rgba(255,255,255,0.04);
+    }
+
+    .library-item strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .library-item small {
+      color: var(--muted);
+    }
+
+    .library-item button {
+      padding: 8px 12px;
+      border-radius: 10px;
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 760px) {
+      .controls { grid-template-columns: 1fr; }
+      .wrap { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <div class="topbar">
+        <div class="logo">Cloud<span>flare</span> Media</div>
+        <div class="badge">Play any video link</div>
+      </div>
+
+      <h1>Upload a video link and play it instantly</h1>
+      <p class="intro">
+        Paste a direct video URL, a Cloudflare Stream link, or upload a local video file. The player will load it right away.
+      </p>
+
+      <div class="controls">
+        <div class="field">
+          <label for="videoUrl">Video link</label>
+          <input id="videoUrl" type="text" placeholder="https://example.com/video.mp4" />
+        </div>
+        <div class="field">
+          <label for="videoFile">Upload file</label>
+          <input id="videoFile" type="file" accept="video/*" />
+        </div>
+      </div>
+
+      <button id="playBtn">Play video</button>
+      <div class="hint">Upload your file to the local host server, or paste a direct link. Cloudflare-style hosting is simulated through this local server.</div>
+
+      <div class="player-box" id="playerBox">
+        <div class="empty-state">Your video will appear here.</div>
+      </div>
+
+      <div class="library">
+        <h3>Saved media</h3>
+        <div class="library-list" id="libraryList"></div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const urlInput = document.getElementById('videoUrl');
+    const fileInput = document.getElementById('videoFile');
+    const playBtn = document.getElementById('playBtn');
+    const playerBox = document.getElementById('playerBox');
+    const libraryList = document.getElementById('libraryList');
+    const STORAGE_KEY = 'cloudflare-media-library';
+
+    function clearPlayer() {
+      playerBox.innerHTML = '<div class="empty-state">Your video will appear here.</div>';
+    }
+
+    function createVideoPlayer(src) {
+      playerBox.innerHTML = '';
+      const video = document.createElement('video');
+      video.controls = true;
+      video.autoplay = true;
+      video.preload = 'metadata';
+      video.src = src;
+      playerBox.appendChild(video);
+    }
+
+    function embedExternal(url) {
+      playerBox.innerHTML = '';
+      const iframe = document.createElement('iframe');
+      iframe.allowFullscreen = true;
+      iframe.referrerPolicy = 'strict-origin-when-cross-origin';
+      iframe.src = url;
+      iframe.title = 'Embedded video';
+      playerBox.appendChild(iframe);
+    }
+
+    function isDirectVideoUrl(value) {
+      const directPattern = /\.(mp4|webm|ogg)(\?.*)?$/i;
+      return directPattern.test(value);
+    }
+
+    function isCloudflareLink(value) {
+      return /cloudflarestream\.com|cloudflare\.com/i.test(value);
+    }
+
+    function isYouTubeLink(value) {
+      return /youtube\.com|youtu\.be/i.test(value);
+    }
+
+    function isVimeoLink(value) {
+      return /vimeo\.com/i.test(value);
+    }
+
+    function toYouTubeEmbed(url) {
+      const videoIdMatch = url.match(/(?:v=|youtu\.be\/)([\w-]{11})/);
+      if (!videoIdMatch) return null;
+      return `https://www.youtube.com/embed/${videoIdMatch[1]}`;
+    }
+
+    function toVimeoEmbed(url) {
+      const idMatch = url.match(/vimeo\.com\/(\d+)/);
+      if (!idMatch) return null;
+      return `https://player.vimeo.com/video/${idMatch[1]}`;
+    }
+
+    function loadLocalLibrary() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      } catch {
+        return [];
+      }
+    }
+
+    function saveLocalLibrary(items) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    }
+
+    function renderLibrary(items) {
+      libraryList.innerHTML = '';
+      if (!items.length) {
+        libraryList.innerHTML = '<div class="empty-state">No saved media yet.</div>';
+        return;
+      }
+
+      const fragment = document.createDocumentFragment();
+      items.forEach((item) => {
+        const row = document.createElement('div');
+        row.className = 'library-item';
+        row.innerHTML = `
+          <div>
+            <strong>${item.title}</strong>
+            <small>${item.type} • ${item.url}</small>
+          </div>
+          <button>Play</button>
+        `;
+        row.querySelector('button').addEventListener('click', () => playSavedItem(item));
+        fragment.appendChild(row);
+      });
+      libraryList.appendChild(fragment);
+    }
+
+    function addToLibrary(item) {
+      const items = loadLocalLibrary();
+      const exists = items.some((entry) => entry.url === item.url);
+      if (!exists) {
+        items.unshift({ ...item, id: Date.now().toString() });
+        saveLocalLibrary(items);
+        renderLibrary(items);
+      }
+      fetch('/save-item', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(item)
+      }).catch(() => {});
+    }
+
+    async function refreshLibrary() {
+      try {
+        const response = await fetch('/library');
+        if (response.ok) {
+          const serverItems = await response.json();
+          const localItems = loadLocalLibrary();
+          const merged = [...serverItems, ...localItems.filter((item) => !serverItems.some((entry) => entry.url === item.url))];
+          saveLocalLibrary(merged);
+          renderLibrary(merged);
+          return;
+        }
+      } catch (error) {}
+      renderLibrary(loadLocalLibrary());
+    }
+
+    function playSavedItem(item) {
+      if (item.type === 'video' || isDirectVideoUrl(item.url)) {
+        createVideoPlayer(item.url);
+      } else {
+        embedExternal(item.url);
+      }
+    }
+
+    playBtn.addEventListener('click', async () => {
+      const urlValue = urlInput.value.trim();
+      const fileValue = fileInput.files[0];
+
+      if (fileValue) {
+        const formData = new FormData();
+        formData.append('file', fileValue);
+
+        playBtn.disabled = true;
+        playBtn.textContent = 'Uploading...';
+
+        try {
+          const response = await fetch('/upload', {
+            method: 'POST',
+            body: formData
+          });
+          const data = await response.json();
+          if (data.url) {
+            createVideoPlayer(data.url);
+            addToLibrary({ title: fileValue.name, type: 'video', url: data.url });
+          } else {
+            alert('Upload failed.');
+          }
+        } catch (error) {
+          alert('Upload failed: ' + error.message);
+        } finally {
+          playBtn.disabled = false;
+          playBtn.textContent = 'Play video';
+        }
+        return;
+      }
+
+      if (!urlValue) {
+        clearPlayer();
+        return;
+      }
+
+      if (isDirectVideoUrl(urlValue)) {
+        createVideoPlayer(urlValue);
+        addToLibrary({ title: urlValue, type: 'video', url: urlValue });
+        return;
+      }
+
+      if (isYouTubeLink(urlValue)) {
+        const embedUrl = toYouTubeEmbed(urlValue);
+        if (embedUrl) {
+          embedExternal(embedUrl);
+          addToLibrary({ title: 'YouTube video', type: 'embed', url: embedUrl });
+          return;
+        }
+      }
+
+      if (isVimeoLink(urlValue)) {
+        const embedUrl = toVimeoEmbed(urlValue);
+        if (embedUrl) {
+          embedExternal(embedUrl);
+          addToLibrary({ title: 'Vimeo video', type: 'embed', url: embedUrl });
+          return;
+        }
+      }
+
+      if (isCloudflareLink(urlValue)) {
+        embedExternal(urlValue);
+        addToLibrary({ title: 'Cloudflare media', type: 'embed', url: urlValue });
+        return;
+      }
+
+      alert('Please use a direct video URL, a local video file, or a supported embed link.');
+    });
+
+    window.addEventListener('DOMContentLoaded', refreshLibrary);
+  </script>
+</body>
+</html>
